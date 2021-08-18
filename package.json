@@ -1,0 +1,36 @@
+{
+  "name": "telegrambot",
+  "version": "1.0.0",
+  "description": "Телеграмм бот, который помогает покупателю найти информацию( про товар\\локацию магазина\\цену и тд..)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon bot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KRomanV/telegramBot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KRomanV/telegramBot/issues"
+  },
+  "homepage": "https://github.com/KRomanV/telegramBot#readme",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.24.0"
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "hbs": "^4.1.2",
+    "mongoose": "^5.13.7",
+    "morgan": "^1.10.0",
+    "node-telegram-bot-api": "^0.54.0",
+    "nodemon": "^2.0.12",
+    "telegraf": "^4.4.1"
+  }
+}
