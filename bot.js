@@ -1,9 +1,12 @@
 /* eslint-disable max-len */
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-// const { callback } = require('telegraf/typings/button');
+const productModel = require('./db/models/product');
+const connectToDB = require('./db/connect');
+const parsingDb = require('./parsingdb');
 
 const token = process.env.BOT_TOKEN;
+connectToDB();
 
 const bot = new TelegramBot(token, {
   polling: {
@@ -45,6 +48,12 @@ bot.onText(/\/help/, (msg) => {
   `);
 });
 
+bot.onText(/\/pic/, (msg) => {
+  bot.sendPhoto(msg.chat.id, './img/Darkside.jpg', {
+    caption: 'picture',
+  });
+});
+
 bot.onText(/\/menu/, (msg) => {
   const { id } = msg.chat;
 
@@ -54,20 +63,69 @@ bot.onText(/\/menu/, (msg) => {
         [{
           text: '🗺Отправить местоположение 🗺',
           request_location: true, // получение локации пользователя
-        }],
-        ['🤙Полезные ссылочки 👀', '🛑Закрыть Клавиатуру🛑'],
-        [{
+        },
+        {
           text: '📳Отправить контакт📳',
           request_contact: true, // получение телефона пользователя
         }],
+        ['🤙Полезные ссылочки 👀', '🛑Закрыть Клавиатуру🛑', '😎телефон для связи😎'],
+        ['💸МАГАЗИН💸', '🚕Ближайший магазин🚕'],
       ],
       one_time_keyboard: true, // нажатие на любой клавиши клава уходит
     },
   });
 });
 
-bot.on('message', (msg) => {
+bot.on('message', async (msg) => {
   const { id } = msg.chat;
+  if (msg.text === '💸МАГАЗИН💸') {
+    bot.sendMessage(id, 'ВЫБЕРИ БРЕНД', {
+      reply_markup: {
+        keyboard: [
+          ['🌑Darkside🌑', '🥇НАШ🥇', '👼SmokeAngels👼'],
+          ['🔙НАЗАД🔙'],
+        ],
+        one_time_keyboard: true, // нажатие на любой клавиши клава уходит
+      },
+    });
+  }
+  if (msg.text === '🌑Darkside🌑' || msg.text === '🥇НАШ🥇' || msg.text === '👼SmokeAngels👼') {
+    const brand = msg.text.match(/[а-яА-Я]{1,}|[a-zA-Z]{1,}/g).toString();
+    const findAll = await parsingDb(brand);
+    bot.sendPhoto(msg.chat.id, `./img/${brand}.jpg`, {
+      caption: `${findAll}`,
+    });
+    //     bot.sendMessage(id, `Наши товары:
+    // ----------------------------
+    // Табачные смеси:
+    // ----------------------------
+    // ${findAll}`);
+  }
+  if (msg.text === '🔙НАЗАД🔙') {
+    bot.sendMessage(id, 'С помощью местоположения я могу проложить маршрут до магазина. Нажимая на "Отправить контакт" вы регистрируетесь в нашей системе и отправите нам свой номер телефона', {
+      reply_markup: {
+        keyboard: [
+          [{
+            text: '🗺Отправить местоположение 🗺',
+            request_location: true, // получение локации пользователя
+          },
+          {
+            text: '📳Отправить контакт📳',
+            request_contact: true, // получение телефона пользователя
+          }],
+          ['🤙Полезные ссылочки 👀', '🛑Закрыть Клавиатуру🛑', '😎телефон для связи😎'],
+          ['💸МАГАЗИН💸', '🚕Ближайший магазин🚕'],
+        ],
+        one_time_keyboard: true, // нажатие на любой клавиши клава уходит
+      },
+    });
+  }
+  if (msg.text === '😎телефон для связи😎') {
+    bot.sendContact(id, '+8 (910) 541-71-70', 'Malina');
+  }
+  if (msg.text === '🚕Ближайший магазин🚕') {
+    bot.sendVenue(id, 55.12155606960342, 36.61076749999998, 'Hookahteka', 'Лучший магазин кальянных принадлежностей 😎');
+  }
   if (msg.text === 'Закрыть Клавиатуру') {
     bot.sendMessage(id, 'Закрываю клавиатуру', {
       reply_markup: {
@@ -80,29 +138,22 @@ bot.on('message', (msg) => {
         inline_keyboard: [
           [
             {
+              text: 'Instagram MalinaBar',
+              url: 'https://www.instagram.com/malinabarobninsk/', // при нажатии на кнопку калбек кьвери получит данную дату
+            },
+            {
               text: 'Instagram Hookahteka',
               url: 'https://www.instagram.com/hookahteka_obn/', // запрашивает переход по ссылке
             },
           ],
           [
             {
-              text: 'Instagram MalinaBar',
-              url: 'https://www.instagram.com/malinabarobninsk/', // при нажатии на кнопку калбек кьвери получит данную дату
-            },
-            {
-              text: 'Наш номер',
-              url: 'https://telegram.me/+79108417170', // при нажатии на кнопку калбек кьвери получит данную дату
+              text: 'Бронь стола',
+              url: 'https://www.instagram.com/direct/t/340282366841710300949128165014853354047',
             },
           ],
         ],
       },
-    });
-
-    bot.on('callback_query', (query) => {
-      // const { id } = query.message.chat;
-      bot.sendMessage(id, `${query.data}`);
-
-      // bot.answerCallbackQuery(query.id, `${query.data}`); // callback_data: из ф-ции вышк
     });
   }
 });
@@ -215,24 +266,24 @@ bot.on('message', (msg) => {
 
 // ==============================================================================
 
-// bot.on('inline_query', (query) => { // создаем 5 тайтлов с отпарвкой сообщения в других чатах через @имя бота
-//   const result = [];
+bot.on('inline_query', (query) => { // создаем 5 тайтлов с отпарвкой сообщения в других чатах через @имя бота
+  const result = [];
 
-//   for (let i = 0; i < 5; i += 1) {
-//     result.push({
-//       type: 'article',
-//       id: i.toString(),
-//       title: `Title${i}`,
-//       input_message_content: {
-//         message_text: `Article #${i}`,
-//       },
-//     });
-//   }
+  for (let i = 0; i < 5; i += 1) {
+    result.push({
+      type: 'article',
+      id: i.toString(),
+      title: `Title${i}`,
+      input_message_content: {
+        message_text: `Article #${i}`,
+      },
+    });
+  }
 
-//   bot.answerInlineQuery(query.id, result, {
-//     cache_time: 0,
-//   });
-// });
+  bot.answerInlineQuery(query.id, result, {
+    cache_time: 0,
+  });
+});
 
 // ==============================================================================
 
